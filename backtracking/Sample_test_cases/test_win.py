@@ -4,7 +4,7 @@ from queue import PriorityQueue
 import sys
 
 path = "Sample_test_cases/"
-inputs = open(path+"input3.txt","r")
+inputs = open(path + "input3.txt", "r")
 input_data = []
 i = 0
 for line in inputs:
@@ -15,6 +15,7 @@ for line in inputs:
 class IpProp:  # Class which will contain all parameters used later.
     pots = []
     conf = {}
+
     def __init__(self):
         self.grp_cnt = None
         self.pot_cnt = None
@@ -23,7 +24,8 @@ class IpProp:  # Class which will contain all parameters used later.
         self.pot_seq = None
         return
 
-#*********************************READING INPUTS BEGINS*******************************************#
+
+# *********************************READING INPUTS BEGINS*******************************************#
 global goal_node
 goal_node = None
 Node_map = {}
@@ -34,15 +36,18 @@ props.node_cnt = 0
 props.filled_teams = 0
 
 # Assigning the pots to pot array
-for i in range(2,2+props.pot_cnt):
+for i in range(2, 2 + props.pot_cnt):
     props.pots.append(input_data[i].rstrip().split(","))
 # Assigning the confederations
-for i in range(2+props.pot_cnt,2+props.pot_cnt+6):
-    props.conf[str(input_data[i].split(":")[0])] = input_data[i].split(":")[1].rstrip().split(",")
+for i in range(2 + props.pot_cnt, 2 + props.pot_cnt + 6):
+    props.conf[str(input_data[i].split(":")[0])] = (
+        input_data[i].split(":")[1].rstrip().split(",")
+    )
 
-#*********************************READING INPUTS ENDS*******************************************#
+
+# *********************************READING INPUTS ENDS*******************************************#
 # Prioritize pots according to diversity
-def diversity(props,team_info):
+def diversity(props, team_info):
     div_sum = []
     for i in range(props.pot_cnt):
         div_sum.append(0)
@@ -53,20 +58,21 @@ def diversity(props,team_info):
                 if confederation in team_info[props.pots[i][pot_ctr]][0]:
                     div_sum[i] += 1
                     break
-        queue.put([div_sum[i],i])
+        queue.put([div_sum[i], i])
     updated_pots = []
     pot_seq = []
     for i in range(props.pot_cnt):
         curr_idx = int(queue.get()[1])
         pot_seq.append(curr_idx)
         updated_pots.append(props.pots[curr_idx])
-    return updated_pots,pot_seq
+    return updated_pots, pot_seq
+
 
 # Collecting all teams with their corresponding confederation and pot in dictionary
 teams = {}
-team_info = {}  #Stores information of a team as Confederation and Pot Number
+team_info = {}  # Stores information of a team as Confederation and Pot Number
 counter = 0
-for confederation in ["AFC","CAF","OFC","CONCACAF","CONMEBOL","UEFA"]:
+for confederation in ["AFC", "CAF", "OFC", "CONCACAF", "CONMEBOL", "UEFA"]:
     if "None" not in props.conf[confederation]:
         for j in range(len(props.conf[confederation])):
             list1 = []
@@ -84,7 +90,7 @@ for confederation in ["AFC","CAF","OFC","CONCACAF","CONMEBOL","UEFA"]:
                     counter += 1
 props.no_teams = len(team_info)
 # Updating Pots according to constraints as heuristics
-props.pots,props.pot_seq = diversity(props,team_info)
+props.pots, props.pot_seq = diversity(props, team_info)
 
 # Randomize Teams
 team_idx = []
@@ -103,16 +109,17 @@ teams = updated_teams
 # Checking for Max number of teams in a pot greater than number of groups.
 max_teams = 0
 for i in range(props.pot_cnt):
-    max_teams = max(max_teams,len(props.pots[i]))
-if max_teams>props.grp_cnt:
+    max_teams = max(max_teams, len(props.pots[i]))
+if max_teams > props.grp_cnt:
     print("Solution Doesnot Exist. Pigeon Hole Failure")
     sys.exit()
 # Checking for teams in UEFA greater than twice the number of groups.
-for confederation in ["AFC","CAF","OFC","CONCACAF","CONMEBOL","UEFA"]:
+for confederation in ["AFC", "CAF", "OFC", "CONCACAF", "CONMEBOL", "UEFA"]:
     if "UEFA" in props.conf[confederation]:
-        if len(props.conf[confederation])>props.grp_cnt*2:
+        if len(props.conf[confederation]) > props.grp_cnt * 2:
             print("Solution Doesnot Exist. UEFA Failure")
             sys.exit()
+
 
 class Node(object):
     def __init__(self):
@@ -124,20 +131,23 @@ class Node(object):
         self.conf_mat = None
         self.filled_teams = None
         return
-props.depth_idx = {}    # DONOT Randomize
+
+
+props.depth_idx = {}  # DONOT Randomize
 counter = 1
 for i in range(props.grp_cnt):
     for j in range(props.pot_cnt):
-        props.depth_idx[str(counter)] = [i,j]
+        props.depth_idx[str(counter)] = [i, j]
         counter += 1
 
-def create_node(in_parent,in_value,Node_map,props):
+
+def create_node(in_parent, in_value, Node_map, props):
     new_node = Node()
     new_node.is_closed = copy.deepcopy(False)
     new_node.parent = copy.deepcopy(in_parent)
     new_node.id = copy.deepcopy(props.node_cnt)
-    curr_depth = Node_map[str(in_parent)].depth+1
-    curr_fill_teams = Node_map[str(in_parent)].filled_teams+1
+    curr_depth = Node_map[str(in_parent)].depth + 1
+    curr_fill_teams = Node_map[str(in_parent)].filled_teams + 1
     new_node.depth = copy.deepcopy(curr_depth)
     # Initializing the state in the node
     new_node.state = copy.deepcopy(Node_map[str(in_parent)].state)
@@ -154,7 +164,7 @@ def create_node(in_parent,in_value,Node_map,props):
     return new_node
 
 
-def consistency_check(in_state,parent,in_var,depth,props):
+def consistency_check(in_state, parent, in_var, depth, props):
     # This should take the node, update the domains of the node and if consistency
     # is lost, then returns inconsistent which will not store the Node in possible actions
     # in get children function
@@ -164,7 +174,7 @@ def consistency_check(in_state,parent,in_var,depth,props):
     col = props.depth_idx[str(depth)][1]
     # Removing this country from current col domains
     for i in range(props.grp_cnt):
-        if (i == row):
+        if i == row:
             continue
         curr_domain = copy.deepcopy(in_state[i][col])
         if in_var in curr_domain:
@@ -172,12 +182,12 @@ def consistency_check(in_state,parent,in_var,depth,props):
             in_state[i][col] = curr_domain
 
     curr_conf = in_var[1]
-    if curr_conf=="UEFA":
+    if curr_conf == "UEFA":
         no_uefa = Node_map[str(parent)].conf_mat[row].count("UEFA")
-        if (no_uefa>1):
+        if no_uefa > 1:
             return "inconsistent"
-        elif (no_uefa==1):
-            for i in range(col+1,props.pot_cnt):
+        elif no_uefa == 1:
+            for i in range(col + 1, props.pot_cnt):
                 curr_domain = copy.deepcopy(in_state[row][i])
                 ctr = 0
                 while ctr < len(curr_domain):
@@ -192,7 +202,7 @@ def consistency_check(in_state,parent,in_var,depth,props):
         if curr_conf in Node_map[str(parent)].conf_mat[row]:
             return "inconsistent"
         else:
-            for i in range(col+1,props.pot_cnt):
+            for i in range(col + 1, props.pot_cnt):
                 curr_domain = copy.deepcopy(in_state[row][i])
                 ctr = 0
                 while ctr < len(curr_domain):
@@ -207,7 +217,7 @@ def consistency_check(in_state,parent,in_var,depth,props):
     return in_state
 
 
-def print_state(in_state,props):
+def print_state(in_state, props):
     print("**********************************************")
     for i in range(props.grp_cnt):
         row = []
@@ -220,24 +230,24 @@ def print_state(in_state,props):
     print("**********************************************")
 
 
-def get_children(in_node_id,Node_map,props):
+def get_children(in_node_id, Node_map, props):
     Node_map[str(in_node_id)].is_closed = True
     # print("Evaluating Children for: ",in_node_id)
     children = []
-    curr_depth = Node_map[str(in_node_id)].depth+1
+    curr_depth = Node_map[str(in_node_id)].depth + 1
     row = props.depth_idx[str(curr_depth)][0]
     col = props.depth_idx[str(curr_depth)][1]
     domain = copy.deepcopy(Node_map[str(in_node_id)].state[row][col])
     if not domain:
-        remaining_spots = (props.grp_cnt*props.pot_cnt)-curr_depth
+        remaining_spots = (props.grp_cnt * props.pot_cnt) - curr_depth
         filled_Spots = Node_map[str(in_node_id)].filled_teams
-        if ((props.no_teams-filled_Spots)<=remaining_spots):
+        if (props.no_teams - filled_Spots) <= remaining_spots:
             # print("******************************Can accommodate empty")
             op_node = create_node(in_node_id, [], Node_map, props)
             Node_map[str(props.node_cnt)] = op_node
             children.append(props.node_cnt)
             # if (props.node_cnt%1000==0):
-                # print(props.node_cnt,Node_map[str(props.node_cnt)].depth)
+            # print(props.node_cnt,Node_map[str(props.node_cnt)].depth)
             props.node_cnt += 1
             return children
         else:
@@ -246,24 +256,27 @@ def get_children(in_node_id,Node_map,props):
     # Possible Value options
     for i in range(len(domain)):
         child = domain[i]
-        op_node = create_node(in_node_id,child,Node_map,props)
-        updated_state = consistency_check(op_node.state,in_node_id,child,curr_depth,props)
-        if updated_state!="inconsistent":
+        op_node = create_node(in_node_id, child, Node_map, props)
+        updated_state = consistency_check(
+            op_node.state, in_node_id, child, curr_depth, props
+        )
+        if updated_state != "inconsistent":
             op_node.state = updated_state
             Node_map[str(props.node_cnt)] = op_node
             children.append(props.node_cnt)
             # if (props.node_cnt%100==0):
-                # print(props.node_cnt,Node_map[str(props.node_cnt)].depth)
+            # print(props.node_cnt,Node_map[str(props.node_cnt)].depth)
             props.node_cnt += 1
     if not children:
         return children
     return children
 
+
 # Full depth expansion for test
-def backtracking(in_node_id,Node_map,props):
+def backtracking(in_node_id, Node_map, props):
     global goal_node
     # if (Node_map[str(in_node_id)].depth==(props.no_teams)):
-    if (Node_map[str(in_node_id)].filled_teams==(props.no_teams)):
+    if Node_map[str(in_node_id)].filled_teams == (props.no_teams):
         # is_goal = goal_check(in_node_id,Node_map,props)
         is_goal = True
         if is_goal:
@@ -271,24 +284,27 @@ def backtracking(in_node_id,Node_map,props):
             goal_node = in_node_id
         return is_goal
     else:
-        children = get_children(in_node_id,Node_map,props)
+        children = get_children(in_node_id, Node_map, props)
         # print(children)
         if not children:
             return False
         for i in children:
-            print("Currently Evaluating: ",(i,Node_map[str(i)].depth))
-            print_state(Node_map[str(i)].state,props)
-            print("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx")
+            print("Currently Evaluating: ", (i, Node_map[str(i)].depth))
+            print_state(Node_map[str(i)].state, props)
+            print(
+                "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            )
             if Node_map[str(i)].is_closed:
                 print("OOPPSS CLOSED")
-            if Node_map[str(i)].is_closed==False:
-                is_goal = backtracking(i,Node_map,props)
-                print("Should i proceed further???",is_goal)
+            if Node_map[str(i)].is_closed == False:
+                is_goal = backtracking(i, Node_map, props)
+                print("Should i proceed further???", is_goal)
                 if is_goal:
                     return is_goal
         return False
 
-#*******************************MAIN****************************#
+
+# *******************************MAIN****************************#
 # Initializing the Root node
 root_idx = 0
 new_node = Node()
@@ -313,13 +329,13 @@ for i in range(props.pot_cnt):
         curr_domain = []
         curr_domain = copy.deepcopy(rows[j][i])
         ctr = 0
-        while ctr<len(curr_domain):
+        while ctr < len(curr_domain):
             elmnt_rmvd = False
-            if (curr_domain[ctr][2]!=props.pot_seq[i]):
+            if curr_domain[ctr][2] != props.pot_seq[i]:
                 elmnt_rmvd = True
                 curr_domain.remove(curr_domain[ctr])
             if not elmnt_rmvd:
-               ctr += 1
+                ctr += 1
         rows[j][i] = curr_domain
 new_node.state = rows
 
@@ -337,8 +353,8 @@ Node_map[str(root_idx)] = new_node
 props.node_cnt += 1
 
 print("Search Begins")
-reply = backtracking(0,Node_map,props)
-print ("GOAL REACHED AT NODE",goal_node)
+reply = backtracking(0, Node_map, props)
+print("GOAL REACHED AT NODE", goal_node)
 state = Node_map[str(goal_node)].state
 goal = []
 for a in range(props.grp_cnt):

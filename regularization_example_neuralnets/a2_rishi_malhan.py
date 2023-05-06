@@ -24,135 +24,174 @@ import matplotlib.pyplot as plt
 # • keras.regularizers.l2()
 # • keras.optimizers.Adam()
 # • keras.model.compile()
-distribution = tf.keras.initializers.RandomUniform( minval=-1, maxval=1, seed=None )
-def ConstructNetwork( input_dim,output_dim,width,depth,regularization_param=0.0 ):
-  model = tf.keras.Sequential()
-  model.add( tf.keras.layers.Input(shape=(input_dim,)) ) # Input
-  no_hidden_layers = depth-1
-  for i in range(no_hidden_layers):
-    model.add(   tf.keras.layers.Dense(width, activation='tanh', use_bias=True,
-                              kernel_initializer=distribution,
-                              bias_initializer=distribution,
-                              kernel_regularizer=tf.keras.regularizers.l2(regularization_param)
-                              ) )
-  model.add( tf.keras.layers.Dense(output_dim,activation=None, use_bias=True,
-                              kernel_initializer=distribution,
-                              bias_initializer=distribution,
-                              kernel_regularizer=tf.keras.regularizers.l2(regularization_param)
-                              ) ) # Output
-  model.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
-              loss='mse',
-              metrics=['mse']
-              )
-  return model
+distribution = tf.keras.initializers.RandomUniform(minval=-1, maxval=1, seed=None)
+
+
+def ConstructNetwork(input_dim, output_dim, width, depth, regularization_param=0.0):
+    model = tf.keras.Sequential()
+    model.add(tf.keras.layers.Input(shape=(input_dim,)))  # Input
+    no_hidden_layers = depth - 1
+    for i in range(no_hidden_layers):
+        model.add(
+            tf.keras.layers.Dense(
+                width,
+                activation="tanh",
+                use_bias=True,
+                kernel_initializer=distribution,
+                bias_initializer=distribution,
+                kernel_regularizer=tf.keras.regularizers.l2(regularization_param),
+            )
+        )
+    model.add(
+        tf.keras.layers.Dense(
+            output_dim,
+            activation=None,
+            use_bias=True,
+            kernel_initializer=distribution,
+            bias_initializer=distribution,
+            kernel_regularizer=tf.keras.regularizers.l2(regularization_param),
+        )
+    )  # Output
+    model.compile(
+        optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+        loss="mse",
+        metrics=["mse"],
+    )
+    return model
+
 
 def main():
-  # 2. Create a dataset using the function
-  # f(x) = sin(10πx) + !(x)
-  # where ! ∼ N(0;0:2) is an additive Gaussian noise at each evaluation point. Evaluate the function
-  # at 125 uniformly spaced points between [0,1]. Use every 5th point to create the validation set, and
-  # keep the rest as the training set. Thus, the training set will have 100 samples and the validation set
-  # will have 50 samples. Note: Fix a random generator seed (say to 1), to ensure the same dataset is
-  # generated each time the script is run.
+    # 2. Create a dataset using the function
+    # f(x) = sin(10πx) + !(x)
+    # where ! ∼ N(0;0:2) is an additive Gaussian noise at each evaluation point. Evaluate the function
+    # at 125 uniformly spaced points between [0,1]. Use every 5th point to create the validation set, and
+    # keep the rest as the training set. Thus, the training set will have 100 samples and the validation set
+    # will have 50 samples. Note: Fix a random generator seed (say to 1), to ensure the same dataset is
+    # generated each time the script is run.
 
-  # Samples:
-  no_points = 125
-  no_epochs = 5000
-  x = np.linspace(0,1,no_points,endpoint=True,dtype=float).flatten()
-  np.random.seed(1)
-  noise = np.random.normal(0,0.2,no_points)
-  y = np.sin(10*3.14*x) + noise
-  validation_indices = np.arange(0,no_points,5)
-  training_indices = np.setdiff1d( np.arange(0,125),validation_indices )
-  validation_set = np.column_stack(( x[validation_indices],y[validation_indices] ))
-  training_set = np.column_stack(( x[training_indices],y[training_indices] ))
+    # Samples:
+    no_points = 125
+    no_epochs = 5000
+    x = np.linspace(0, 1, no_points, endpoint=True, dtype=float).flatten()
+    np.random.seed(1)
+    noise = np.random.normal(0, 0.2, no_points)
+    y = np.sin(10 * 3.14 * x) + noise
+    validation_indices = np.arange(0, no_points, 5)
+    training_indices = np.setdiff1d(np.arange(0, 125), validation_indices)
+    validation_set = np.column_stack((x[validation_indices], y[validation_indices]))
+    training_set = np.column_stack((x[training_indices], y[training_indices]))
 
-  # 3. Consider the regularization parameter values f0:0;1e−4;1e−3;1e−2g. For each parameter value, create
-  # a network with width = 15, depth = 10 and input dim = output dim = 1. With each configuration,
-  # train a network 3 times with different weight initialization with the above defined training and validation
-  # data, maximum epochs 5000, batch size 25 and with shuffling on. You will need to use the model.fit()
-  # command to train.
-  
-  reg_params = [ 0.0, 1e-4, 1e-3, 1e-2 ]
-  histories = []
-  import timeit  
-  start_time = timeit.default_timer()
-  for reg_param in reg_params:
-    print("Currently using regularization value: {0}".format(reg_param))
-    hist = {}
-    hist['models'] = []
-    hist['train_mse'] = []
-    hist['val_mse'] = []
-    hist['loss'] = []
-    hist['val_loss'] = []
-    hist['train_pred'] = []
-    hist['val_pred'] = []
-    hist['train_ip'] = []
-    hist['val_ip'] = []
-    for i in range(3):
-      model = ConstructNetwork(1,1,15,10,reg_param)
-      history = model.fit( 
-                  x=training_set[:,0],y=training_set[:,1],epochs=no_epochs,batch_size=25,shuffle=True,
-                  validation_data=(validation_set[:,0],validation_set[:,1]),
-                  verbose=0,
-                  workers=8,
-                  use_multiprocessing=True
+    # 3. Consider the regularization parameter values f0:0;1e−4;1e−3;1e−2g. For each parameter value, create
+    # a network with width = 15, depth = 10 and input dim = output dim = 1. With each configuration,
+    # train a network 3 times with different weight initialization with the above defined training and validation
+    # data, maximum epochs 5000, batch size 25 and with shuffling on. You will need to use the model.fit()
+    # command to train.
+
+    reg_params = [0.0, 1e-4, 1e-3, 1e-2]
+    histories = []
+    import timeit
+
+    start_time = timeit.default_timer()
+    for reg_param in reg_params:
+        print("Currently using regularization value: {0}".format(reg_param))
+        hist = {}
+        hist["models"] = []
+        hist["train_mse"] = []
+        hist["val_mse"] = []
+        hist["loss"] = []
+        hist["val_loss"] = []
+        hist["train_pred"] = []
+        hist["val_pred"] = []
+        hist["train_ip"] = []
+        hist["val_ip"] = []
+        for i in range(3):
+            model = ConstructNetwork(1, 1, 15, 10, reg_param)
+            history = model.fit(
+                x=training_set[:, 0],
+                y=training_set[:, 1],
+                epochs=no_epochs,
+                batch_size=25,
+                shuffle=True,
+                validation_data=(validation_set[:, 0], validation_set[:, 1]),
+                verbose=0,
+                workers=8,
+                use_multiprocessing=True,
+            )
+            train_mse = history.history["mse"]
+            val_mse = history.history["val_mse"]
+            loss = history.history["loss"][-1]
+            val_loss = history.history["val_loss"][-1]
+            print(
+                "Run: {0}. Training MSE: {1}. Validation MSE: {2}. Loss: {3}. Validation loss: {4}".format(
+                    i + 1, train_mse[-1], val_mse[-1], loss, val_loss
                 )
-      train_mse = history.history['mse']
-      val_mse = history.history['val_mse']
-      loss = history.history['loss'][-1]
-      val_loss = history.history['val_loss'][-1]
-      print("Run: {0}. Training MSE: {1}. Validation MSE: {2}. Loss: {3}. Validation loss: {4}".format(i+1,train_mse[-1],val_mse[-1],loss,val_loss))
-      train_pred = model.predict( training_set[:,0] )
-      val_pred = model.predict( validation_set[:,0] )
-      hist['models'].append(model)
-      hist['train_mse'].append(train_mse)
-      hist['val_mse'].append(val_mse)
-      hist['train_ip'].append(training_set[:,0])
-      hist['val_ip'].append(validation_set[:,0])
-      hist['train_pred'].append(train_pred)
-      hist['val_pred'].append(val_pred)
-      hist['loss'].append(loss)
-      hist['val_loss'].append(val_loss)
-    histories.append(hist)
-    print("\n")
+            )
+            train_pred = model.predict(training_set[:, 0])
+            val_pred = model.predict(validation_set[:, 0])
+            hist["models"].append(model)
+            hist["train_mse"].append(train_mse)
+            hist["val_mse"].append(val_mse)
+            hist["train_ip"].append(training_set[:, 0])
+            hist["val_ip"].append(validation_set[:, 0])
+            hist["train_pred"].append(train_pred)
+            hist["val_pred"].append(val_pred)
+            hist["loss"].append(loss)
+            hist["val_loss"].append(val_loss)
+        histories.append(hist)
+        print("\n")
 
-  elapsed = timeit.default_timer() - start_time
-  print("\nElapsed time: {0}\n".format(elapsed))
+    elapsed = timeit.default_timer() - start_time
+    print("\nElapsed time: {0}\n".format(elapsed))
 
-  # At the end of each training, save the history of the metric evaluated on training set (mse) and the
-  # validation set (val mse). Also, print the final value of these metrics (at the final epoch) for each
-  # training). Furthermore, evaluate and save the predictions of the network on the training and validation
-  # set.
-  # Plots:
-  plt.rcParams["figure.figsize"] = (20,15)
-  fig1,axs1 = plt.subplots(len(histories),2)
-  fig2,axs2 = plt.subplots(len(histories),2)
-  pad = 3.0
-  fig1.tight_layout(pad=pad)
-  fig2.tight_layout(pad=pad)
-  
-  for i in range(len(histories)):
-    axs1[i,0].set_title( "Training MSE vs Epochs. Regularization: " + str(reg_params[i]) )
-    axs1[i,1].set_title( "Validation MSE vs Epochs. Regularization: " + str(reg_params[i]) )
-    for j in range(3):
-      axs1[i,0].plot( np.linspace(1,no_epochs,no_epochs,endpoint=True,dtype=int),histories[i]['train_mse'][j] )
-      axs1[i,1].plot( np.linspace(1,no_epochs,no_epochs,endpoint=True,dtype=int),histories[i]['val_mse'][j] )
+    # At the end of each training, save the history of the metric evaluated on training set (mse) and the
+    # validation set (val mse). Also, print the final value of these metrics (at the final epoch) for each
+    # training). Furthermore, evaluate and save the predictions of the network on the training and validation
+    # set.
+    # Plots:
+    plt.rcParams["figure.figsize"] = (20, 15)
+    fig1, axs1 = plt.subplots(len(histories), 2)
+    fig2, axs2 = plt.subplots(len(histories), 2)
+    pad = 3.0
+    fig1.tight_layout(pad=pad)
+    fig2.tight_layout(pad=pad)
 
-  for i in range(len(histories)):
-    axs2[i,0].set_title( "Training O/P vs I/P. Regularization: " + str(reg_params[i]) )
-    axs2[i,0].set_title( "Validation O/P vs I/P. Regularization: " + str(reg_params[i]) )
-    # Actual Values
-    axs2[i,0].plot( histories[i]['train_ip'][j],training_set[:,1] )
-    axs2[i,1].plot( histories[i]['val_ip'][j],validation_set[:,0] )
-    # Predicted Values
-    for j in range(3):
-      axs2[i,0].plot( histories[i]['train_ip'][j],histories[i]['train_pred'][j] )
-      axs2[i,1].plot( histories[i]['val_ip'][j],histories[i]['val_pred'][j] )
-    axs2[i,0].legend(('actual', 'predict1', 'predict2', 'predict3'))
-    axs2[i,1].legend(('actual', 'predict1', 'predict2', 'predict3'))
-if __name__=='__main__':
-  main()
+    for i in range(len(histories)):
+        axs1[i, 0].set_title(
+            "Training MSE vs Epochs. Regularization: " + str(reg_params[i])
+        )
+        axs1[i, 1].set_title(
+            "Validation MSE vs Epochs. Regularization: " + str(reg_params[i])
+        )
+        for j in range(3):
+            axs1[i, 0].plot(
+                np.linspace(1, no_epochs, no_epochs, endpoint=True, dtype=int),
+                histories[i]["train_mse"][j],
+            )
+            axs1[i, 1].plot(
+                np.linspace(1, no_epochs, no_epochs, endpoint=True, dtype=int),
+                histories[i]["val_mse"][j],
+            )
+
+    for i in range(len(histories)):
+        axs2[i, 0].set_title(
+            "Training O/P vs I/P. Regularization: " + str(reg_params[i])
+        )
+        axs2[i, 0].set_title(
+            "Validation O/P vs I/P. Regularization: " + str(reg_params[i])
+        )
+        # Actual Values
+        axs2[i, 0].plot(histories[i]["train_ip"][j], training_set[:, 1])
+        axs2[i, 1].plot(histories[i]["val_ip"][j], validation_set[:, 0])
+        # Predicted Values
+        for j in range(3):
+            axs2[i, 0].plot(histories[i]["train_ip"][j], histories[i]["train_pred"][j])
+            axs2[i, 1].plot(histories[i]["val_ip"][j], histories[i]["val_pred"][j])
+        axs2[i, 0].legend(("actual", "predict1", "predict2", "predict3"))
+        axs2[i, 1].legend(("actual", "predict1", "predict2", "predict3"))
+
+
+if __name__ == "__main__":
+    main()
 
 """Answer: 5a
 

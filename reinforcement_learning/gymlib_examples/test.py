@@ -9,13 +9,13 @@
 # # print(reward)
 # # print(done)
 
-# env.close()	
+# env.close()
 # # print( env.action_space )
 
 
-
 from gym import spaces
-space = spaces.Discrete(8) # Set with 8 elements {0, 1, 2, ..., 7}
+
+space = spaces.Discrete(8)  # Set with 8 elements {0, 1, 2, ..., 7}
 x = space.sample()
 print(x)
 assert space.contains(x)
